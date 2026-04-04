@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wilson Family Health Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f1f0ec;
+    --border: rgba(0,0,0,0.1); --border-mid: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text2: #6b6b66; --text3: #9e9e98;
+    --blue-bg: #e6f1fb; --blue-text: #185fa5;
+    --green-bg: #eaf3de; --green-text: #3b6d11;
+    --amber-bg: #faeeda; --amber-text: #854f0b;
+    --red-bg: #fcebeb; --red-text: #a32d2d;
+    --purple-bg: #eeedfe; --purple-text: #534ab7;
+    --teal-bg: #e1f5ee; --teal-text: #0f6e56;
+    --coral-bg: #faece7; --coral-text: #993c1d;
+    --radius: 10px; --radius-sm: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #181816; --surface: #222220; --surface2: #2a2a28;
+      --border: rgba(255,255,255,0.1); --border-mid: rgba(255,255,255,0.18);
+      --text: #f0f0ea; --text2: #a0a09a; --text3: #6a6a65;
+      --blue-bg: #0c2a4a; --blue-text: #85b7eb;
+      --green-bg: #152d08; --green-text: #97c459;
+      --amber-bg: #2e1f06; --amber-text: #ef9f27;
+      --red-bg: #2a0f0f; --red-text: #f09595;
+      --purple-bg: #1e1a40; --purple-text: #afa9ec;
+      --teal-bg: #052820; --teal-text: #5dcaa5;
+      --coral-bg: #2a1008; --coral-text: #f0997b;
+    }
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 24px; position: sticky; top: 0; z-index: 50; }
+  .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 16px; height: 56px; }
+  .logo { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .logo span { color: var(--blue-text); }
+  nav { display: flex; gap: 2px; margin-left: 16px; flex: 1; overflow-x: auto; }
+  .nav-btn { padding: 6px 14px; font-size: 13px; border: none; background: none; color: var(--text2); cursor: pointer; border-radius: var(--radius-sm); white-space: nowrap; font-family: inherit; }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+  .alert-dot { display: inline-flex; align-items: center; justify-content: center; background: var(--amber-bg); color: var(--amber-text); border-radius: 9px; font-size: 10px; font-weight: 600; padding: 1px 5px; margin-left: 4px; min-width: 16px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 24px 60px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .metric { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 600; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .c-green { color: var(--green-text); } .c-amber { color: var(--amber-text); } .c-red { color: var(--red-text); } .c-blue { color: var(--blue-text); }
+
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); }
+
+  .btn { padding: 7px 14px; font-size: 13px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-sm); cursor: pointer; background: transparent; color: var(--text); font-family: inherit; }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { color: var(--red-text); border-color: var(--red-text); }
+  .btn-danger:hover { background: var(--red-bg); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; padding: 0 10px 10px; white-space: nowrap; }
+  td { padding: 10px 10px; border-top: 0.5px solid var(--border); vertical-align: middle; }
+  tr:first-child td { border-top: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .badge-pending { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-waiting-eob { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-waiting-bill { background: var(--purple-bg); color: var(--purple-text); }
+  .badge-paid { background: var(--green-bg); color: var(--green-text); }
+  .badge-oop { background: var(--coral-bg); color: var(--coral-text); }
+  .badge-not-submitted { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-submitted { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-reimbursed { background: var(--green-bg); color: var(--green-text); }
+  .badge-denied { background: var(--red-bg); color: var(--red-text); }
+  .badge-in { background: var(--green-bg); color: var(--green-text); }
+  .badge-out { background: var(--coral-bg); color: var(--coral-text); }
+
+  .mpill { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .mp-0 { background: var(--blue-bg); color: var(--blue-text); }
+  .mp-1 { background: var(--purple-bg); color: var(--purple-text); }
+  .mp-2 { background: var(--teal-bg); color: var(--teal-text); }
+  .mp-3 { background: var(--amber-bg); color: var(--amber-text); }
+
+  .prog-bar { background: var(--surface2); border-radius: 4px; height: 7px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .pf-blue { background: #378add; } .pf-amber { background: #ba7517; } .pf-red { background: #a32d2d; } .pf-green { background: #639922; }
+
+  .prog-section { margin-bottom: 16px; }
+  .prog-section:last-child { margin-bottom: 0; }
+  .prog-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .prog-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .prog-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .split { grid-template-columns: 1fr; } }
+
+  .alert-flag { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: var(--radius); margin-bottom: 10px; font-size: 13px; line-height: 1.5; }
+  .af-warn { background: var(--amber-bg); color: var(--amber-text); }
+  .af-info { background: var(--blue-bg); color: var(--blue-text); }
+  .af-green { background: var(--green-bg); color: var(--green-text); }
+  .af-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  .batch-bar { background: var(--amber-bg); border: 0.5px solid rgba(133,79,11,0.3); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--amber-text); line-height: 1.5; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; padding: 40px 16px; overflow-y: auto; }
+  .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+  .modal { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 24px; width: 100%; max-width: 580px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text2); line-height: 1; padding: 2px 6px; border-radius: 4px; font-family: inherit; }
+  .close-btn:hover { background: var(--surface2); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; }
+  input, select, textarea { font-family: inherit; font-size: 13px; padding: 8px 10px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue-text); box-shadow: 0 0 0 2px var(--blue-bg); }
+  textarea { resize: vertical; min-height: 70px; }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 0.5px solid var(--border); }
+  .member-row:first-child { border-top: none; }
+  .oon-tag { font-size: 9px; font-weight: 700; color: var(--red-text); background: var(--red-bg); border-radius: 3px; padding: 1px 4px; margin-left: 5px; vertical-align: middle; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: var(--surface); padding: 10px 20px; border-radius: 999px; font-size: 13px; z-index: 999; transition: transform 0.3s ease; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .empty { color: var(--text3); font-size: 13px; padding: 20px 0; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">Wilson <span>Health</span> Tracker</div>
+    <nav>
+      <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
+      <button class="nav-btn" onclick="showTab('claims',this)">Claims</button>
+      <button class="nav-btn" onclick="showTab('reimburse',this)">Reimbursements <span class="alert-dot" id="reimb-count" style="display:none"></span></button>
+      <button class="nav-btn" onclick="showTab('hsa',this)">HSA</button>
+      <button class="nav-btn" onclick="showTab('alerts',this)">Alerts <span class="alert-dot" id="alert-count" style="display:none"></span></button>
+      <button class="nav-btn" onclick="showTab('settings',this)">Setup</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="section active">
+    <div class="metrics" id="dash-metrics"></div>
+    <div class="split">
+      <div class="card">
+        <div class="card-header"><span class="card-title">In-network deductibles</span></div>
+        <div id="in-ded-prog"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Out-of-network deductibles</span></div>
+        <div id="out-ded-prog"></div>
+      </div>
+    </div>
+    <div class="split">
+      <div class="card">
+        <div class="card-header"><span class="card-title">In-network out-of-pocket</span></div>
+        <div id="in-oop-prog"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Out-of-network out-of-pocket</span></div>
+        <div id="out-oop-prog"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent claims</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Person</th><th>Provider</th><th>You owe</th><th>Status</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLAIMS -->
+  <div id="tab-claims" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div><div class="page-title">Claims</div><div class="page-sub" style="margin-bottom:0">All visits, bills, and insurance claims</div></div>
+      <button class="btn btn-primary" onclick="openClaimModal()">+ Add claim</button>
+    </div>
+    <div class="card" style="padding:0 4px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Person</th><th>Provider</th><th>Type</th><th>Network</th><th>Billed</th><th>Ins. paid</th><th>You owe</th><th>Paid with</th><th>Status</th><th></th></tr></thead>
+          <tbody id="claims-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REIMBURSEMENTS -->
+  <div id="tab-reimburse" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:12px;">
+      <div><div class="page-title">Reimbursements</div><div class="page-sub" style="margin-bottom:0">Providers who don't work with insurance — log, batch, and submit</div></div>
+      <button class="btn btn-primary" onclick="openReimbModal()">+ Add claim</button>
+    </div>
+    <div id="reimb-batch-bar"></div>
+    <div class="metrics" id="reimb-metrics"></div>
+    <div class="card" style="padding:0 4px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Person</th><th>Provider</th><th>You paid</th><th>Expected back</th><th>Reimbursed</th><th>Submitted on</th><th>Status</th><th></th></tr></thead>
+          <tbody id="reimb-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HSA -->
+  <div id="tab-hsa" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div><div class="page-title">HSA</div><div class="page-sub" style="margin-bottom:0">Health savings account activity</div></div>
+      <button class="btn btn-primary" onclick="openHSAModal()">+ Add transaction</button>
+    </div>
+    <div class="metrics" id="hsa-metrics"></div>
+    <div class="card" style="padding:0 4px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th><th>Running balance</th></tr></thead>
+          <tbody id="hsa-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <div id="tab-alerts" class="section">
+    <div class="page-title">Alerts</div>
+    <div class="page-sub">Things that need your attention</div>
+    <div id="alerts-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-settings" class="section">
+    <div class="page-title" style="margin-bottom:16px;">Setup</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Family members</span></div>
+      <div id="members-list"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <input id="new-member-input" placeholder="Add a name..." style="flex:1;" onkeydown="if(event.key==='Enter')addMember()" />
+        <button class="btn" onclick="addMember()">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">In-network limits — <span id="plan-year-label"></span></span></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Individual deductible</label><input type="number" id="s-in-ded-ind" placeholder="1500" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Family deductible</label><input type="number" id="s-in-ded-fam" placeholder="3000" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Individual OOP max</label><input type="number" id="s-in-oop-ind" placeholder="3500" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Family OOP max</label><input type="number" id="s-in-oop-fam" placeholder="7000" oninput="saveSettings()" /></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Out-of-network limits — <span id="plan-year-label2"></span></span></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Individual deductible</label><input type="number" id="s-out-ded-ind" placeholder="3000" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Family deductible</label><input type="number" id="s-out-ded-fam" placeholder="6000" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Individual OOP max</label><input type="number" id="s-out-oop-ind" placeholder="6000" oninput="saveSettings()" /></div>
+        <div class="form-group"><label>Family OOP max</label><input type="number" id="s-out-oop-fam" placeholder="12000" oninput="saveSettings()" /></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">HSA &amp; plan year</span></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Plan year</label>
+          <select id="s-year" onchange="saveSettings()"><option>2025</option><option selected>2026</option><option>2027</option></select>
+        </div>
+        <div class="form-group"><label>HSA annual contribution limit</label><input type="number" id="s-hsa" placeholder="4300" oninput="saveSettings()" /></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Data</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="exportData()">Export backup (JSON)</button>
+        <button class="btn btn-danger" onclick="clearData()">Clear all data</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-top:10px;">Data is saved in your browser. Export periodically to back it up.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- CLAIM MODAL -->
+<div class="modal-overlay" id="claim-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="claim-modal-title">Add claim</span>
+      <button class="close-btn" onclick="closeClaimModal()">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date of service</label><input type="date" id="f-date" /></div>
+      <div class="form-group"><label>Family member</label><select id="f-member"></select></div>
+      <div class="form-group full"><label>Provider / doctor</label><input type="text" id="f-provider" placeholder="e.g. Summit Orthopedics" /></div>
+      <div class="form-group"><label>Service type</label>
+        <select id="f-type">
+          <option>Primary care</option><option>Specialist</option><option>Lab / imaging</option>
+          <option>ER / urgent care</option><option>Surgery</option><option>Physical therapy</option>
+          <option>Mental health / therapy</option><option>Dental</option><option>Vision</option>
+          <option>Pharmacy</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Network status</label>
+        <select id="f-network"><option value="in">In-network</option><option value="out">Out-of-network</option></select>
+      </div>
+      <div class="form-group"><label>Amount billed ($)</label><input type="number" id="f-billed" placeholder="0.00" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Insurance paid ($)</label><input type="number" id="f-ins-paid" placeholder="0.00" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Your responsibility ($)</label><input type="number" id="f-you-owe" placeholder="0.00" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Paid with</label>
+        <select id="f-card">
+          <option value="">— not paid yet —</option>
+          <option>HSA card</option><option>Chase Visa</option><option>WFB Visa</option>
+          <option>Maggie</option><option>Check</option><option>Cash</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Status</label>
+        <select id="f-status">
+          <option value="pending">Pending — submitted to insurance</option>
+          <option value="waiting-eob">Waiting for EOB</option>
+          <option value="waiting-bill">EOB received, waiting for bill</option>
+          <option value="paid">Paid — all done</option>
+          <option value="oop">Paid out-of-pocket (no insurance)</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="e.g. Appealing denial, claim #12345, called provider 3/15..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+      <button class="btn" onclick="closeClaimModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClaim()">Save claim</button>
+    </div>
+  </div>
+</div>
+
+<!-- REIMBURSEMENT MODAL -->
+<div class="modal-overlay" id="reimb-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="reimb-modal-title">Add reimbursement claim</span>
+      <button class="close-btn" onclick="closeReimbModal()">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date of service</label><input type="date" id="r-date" /></div>
+      <div class="form-group"><label>Family member</label><select id="r-member"></select></div>
+      <div class="form-group full"><label>Provider / doctor</label><input type="text" id="r-provider" placeholder="e.g. Dr. Sarah Jones, LPC" /></div>
+      <div class="form-group"><label>Service type</label>
+        <select id="r-type">
+          <option>Mental health / therapy</option><option>Specialist</option><option>Primary care</option>
+          <option>Physical therapy</option><option>Lab / imaging</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Paid with</label>
+        <select id="r-card">
+          <option>HSA card</option><option>Chase Visa</option><option>WFB Visa</option>
+          <option>Maggie</option><option>Check</option><option>Cash</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Amount you paid ($)</label><input type="number" id="r-paid" placeholder="0.00" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Expected reimbursement ($)</label><input type="number" id="r-expected" placeholder="0.00" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Amount reimbursed ($)</label><input type="number" id="r-reimbursed" placeholder="Fill in when received" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Date submitted</label><input type="date" id="r-submitted-date" /></div>
+      <div class="form-group"><label>Status</label>
+        <select id="r-status">
+          <option value="not-submitted">Not submitted yet</option>
+          <option value="submitted">Submitted — awaiting reimbursement</option>
+          <option value="reimbursed">Reimbursed</option>
+          <option value="denied">Denied</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Notes</label><textarea id="r-notes" placeholder="e.g. Session #4, receipt saved in Google Drive, submitted in March batch..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+      <button class="btn" onclick="closeReimbModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReimb()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- HSA MODAL -->
+<div class="modal-overlay" id="hsa-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">HSA transaction</span>
+      <button class="close-btn" onclick="closeHSAModal()">×</button>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="form-group"><label>Date</label><input type="date" id="h-date" /></div>
+      <div class="form-group"><label>Description</label><input type="text" id="h-desc" placeholder="e.g. Employer contribution, dentist visit" /></div>
+      <div class="form-group"><label>Type</label>
+        <select id="h-type">
+          <option value="contribution">Personal contribution (deposit)</option>
+          <option value="employer">Employer contribution</option>
+          <option value="withdrawal">Withdrawal — medical expense</option>
+          <option value="reimbursement">Reimbursement received</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Amount ($)</label><input type="number" id="h-amount" placeholder="0.00" step="0.01" min="0" /></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+      <button class="btn" onclick="closeHSAModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHSA()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT = {
+  members: ['Steph Wilson','Todd Wilson','Maggie Wilson','Ella Wilson'],
+  settings: {
+    inDedInd:1500, inDedFam:3000, inOopInd:3500, inOopFam:7000,
+    outDedInd:3000, outDedFam:6000, outOopInd:6000, outOopFam:12000,
+    year:'2026', hsaContrib:4300
+  },
+  claims:[], reimburse:[], hsa:[]
+};
+
+function load() {
+  try { const r=localStorage.getItem('wilson-health-v2'); return r?JSON.parse(r):JSON.parse(JSON.stringify(DEFAULT)); }
+  catch(e) { return JSON.parse(JSON.stringify(DEFAULT)); }
+}
+function save() { localStorage.setItem('wilson-health-v2', JSON.stringify(state)); }
+
+let state = load();
+let editClaimId = null;
+let editReimbId = null;
+
+function fmt(n) { return '$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function memberIdx(name) { return Math.max(0,state.members.indexOf(name))%4; }
+function initials(name) { return name.trim().split(/\s+/).map(w=>w[0]).join('').substring(0,2).toUpperCase(); }
+function mpill(name) { return `<span class="mpill mp-${memberIdx(name)}" title="${name}">${initials(name)}</span>`; }
+
+const SL = {pending:'Pending','waiting-eob':'Waiting EOB','waiting-bill':'Bill expected',paid:'Paid',oop:'OOP paid'};
+const RL = {'not-submitted':'Not submitted',submitted:'Submitted',reimbursed:'Reimbursed',denied:'Denied'};
+function badge(s) { return `<span class="badge badge-${s}">${SL[s]||s}</span>`; }
+function rbadge(s) { return `<span class="badge badge-${s}">${RL[s]||s}</span>`; }
+
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+function showTab(id,btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  render();
+}
+
+function render() { renderDashboard(); renderClaims(); renderReimburse(); renderHSA(); renderAlerts(); renderSettings(); }
+
+function progSection(label, met, total) {
+  const pct = total>0?Math.min(100,Math.round(met/total*100)):0;
+  const cls = pct>=90?'pf-red':pct>=60?'pf-amber':'pf-blue';
+  return `<div class="prog-section">
+    <div class="prog-label">${label}</div>
+    <div class="prog-row"><span>${fmt(met)} met</span><span style="color:var(--text2)">${fmt(total)} total</span></div>
+    <div class="prog-bar"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div>
+    <div class="prog-sub">${pct}% — ${fmt(Math.max(0,total-met))} remaining</div>
+  </div>`;
+}
+
+function renderDashboard() {
+  const s=state.settings;
+  const doneClaims=state.claims.filter(c=>c.status==='paid'||c.status==='oop');
+  const paidTotal=doneClaims.reduce((a,c)=>a+(c.youOwe||0),0);
+  const inPaid=state.claims.filter(c=>c.network==='in'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+  const outPaid=state.claims.filter(c=>c.network==='out'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+  const reimbTotal=state.reimburse.reduce((a,r)=>a+(r.paid||0),0);
+  const openCount=state.claims.filter(c=>c.status!=='paid'&&c.status!=='oop').length;
+  const notSubCount=state.reimburse.filter(r=>r.status==='not-submitted').length;
+  const hsaBal=state.hsa.reduce((a,h)=>a+h.amount,0);
+
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Total paid this year</div><div class="metric-value">${fmt(paidTotal)}</div><div class="metric-sub">${doneClaims.length} claims settled</div></div>
+    <div class="metric"><div class="metric-label">Open claims</div><div class="metric-value c-amber">${openCount}</div><div class="metric-sub">awaiting EOB or payment</div></div>
+    <div class="metric"><div class="metric-label">Reimb. not submitted</div><div class="metric-value c-red">${notSubCount}</div><div class="metric-sub">${fmt(state.reimburse.filter(r=>r.status==='not-submitted').reduce((a,r)=>a+(r.paid||0),0))} ready to submit</div></div>
+    <div class="metric"><div class="metric-label">HSA balance</div><div class="metric-value c-green">${fmt(hsaBal)}</div></div>
+  `;
+
+  // In-network deductibles: family + individual per member
+  document.getElementById('in-ded-prog').innerHTML =
+    progSection('Family', inPaid, s.inDedFam) +
+    state.members.map(m=>{
+      const mp=state.claims.filter(c=>c.member===m&&c.network==='in'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+      return progSection(m.split(' ')[0], mp, s.inDedInd);
+    }).join('');
+
+  // Out-of-network deductibles: family + per member (claims + reimbursements)
+  const outFamTotal = outPaid + reimbTotal;
+  document.getElementById('out-ded-prog').innerHTML =
+    progSection('Family', outFamTotal, s.outDedFam) +
+    state.members.map(m=>{
+      const cp=state.claims.filter(c=>c.member===m&&c.network==='out'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+      const rp=state.reimburse.filter(r=>r.member===m).reduce((a,r)=>a+(r.paid||0),0);
+      return progSection(m.split(' ')[0], cp+rp, s.outDedInd);
+    }).join('');
+
+  // In-network OOP
+  document.getElementById('in-oop-prog').innerHTML =
+    progSection('Family', inPaid, s.inOopFam) +
+    state.members.map(m=>{
+      const mp=state.claims.filter(c=>c.member===m&&c.network==='in'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+      return progSection(m.split(' ')[0], mp, s.inOopInd);
+    }).join('');
+
+  // Out-of-network OOP
+  document.getElementById('out-oop-prog').innerHTML =
+    progSection('Family', outFamTotal, s.outOopFam) +
+    state.members.map(m=>{
+      const cp=state.claims.filter(c=>c.member===m&&c.network==='out'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+      const rp=state.reimburse.filter(r=>r.member===m).reduce((a,r)=>a+(r.paid||0),0);
+      return progSection(m.split(' ')[0], cp+rp, s.outOopInd);
+    }).join('');
+
+  const recent=[...state.claims].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  document.getElementById('recent-tbody').innerHTML=recent.length
+    ?recent.map(c=>`<tr>
+        <td style="white-space:nowrap;color:var(--text2)">${c.date}</td>
+        <td>${mpill(c.member)}</td>
+        <td>${c.provider}${c.network==='out'?'<span class="oon-tag">OON</span>':''}</td>
+        <td style="font-weight:500">${fmt(c.youOwe)}</td>
+        <td>${badge(c.status)}</td>
+      </tr>`).join('')
+    :'<tr><td colspan="5" class="empty">No claims yet — add your first one in the Claims tab.</td></tr>';
+}
+
+function renderClaims() {
+  const sorted=[...state.claims].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('claims-tbody').innerHTML=sorted.length
+    ?sorted.map(c=>`<tr>
+        <td style="white-space:nowrap;color:var(--text2)">${c.date}</td>
+        <td>${mpill(c.member)}</td>
+        <td>${c.provider}${c.network==='out'?'<span class="oon-tag">OON</span>':''}</td>
+        <td style="color:var(--text2)">${c.type}</td>
+        <td><span class="badge badge-${c.network==='in'?'in':'out'}">${c.network==='in'?'In-network':'Out-of-network'}</span></td>
+        <td>${fmt(c.billed)}</td><td>${fmt(c.insPaid)}</td>
+        <td style="font-weight:500">${fmt(c.youOwe)}</td>
+        <td style="color:var(--text2);font-size:12px">${c.card||'—'}</td>
+        <td>${badge(c.status)}</td>
+        <td><div style="display:flex;gap:4px;">
+          <button class="btn btn-sm" onclick="editClaim(${c.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteClaim(${c.id})">Del</button>
+        </div></td>
+      </tr>`).join('')
+    :'<tr><td colspan="11" class="empty">No claims yet.</td></tr>';
+}
+
+function renderReimburse() {
+  const notSub=state.reimburse.filter(r=>r.status==='not-submitted');
+  const pendingAmt=notSub.reduce((a,r)=>a+(r.paid||0),0);
+  const awaitingAmt=state.reimburse.filter(r=>r.status==='submitted').reduce((a,r)=>a+(r.expected||0),0);
+  const totalReimb=state.reimburse.filter(r=>r.status==='reimbursed').reduce((a,r)=>a+(r.reimbursed||0),0);
+  const totalPaid=state.reimburse.reduce((a,r)=>a+(r.paid||0),0);
+  const netOOP=totalPaid-totalReimb;
+
+  const dot=document.getElementById('reimb-count');
+  dot.textContent=notSub.length; dot.style.display=notSub.length?'inline-flex':'none';
+
+  document.getElementById('reimb-batch-bar').innerHTML=notSub.length>=1
+    ?`<div class="batch-bar">
+        <strong>${notSub.length} claim${notSub.length!==1?'s':''}</strong> totaling <strong>${fmt(pendingAmt)}</strong> haven't been submitted yet.
+        When you do your next batch submission, open each one and mark it as "Submitted."
+      </div>`:'';
+
+  document.getElementById('reimb-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Not submitted</div><div class="metric-value c-amber">${notSub.length}</div><div class="metric-sub">${fmt(pendingAmt)} paid out</div></div>
+    <div class="metric"><div class="metric-label">Submitted, awaiting</div><div class="metric-value c-blue">${state.reimburse.filter(r=>r.status==='submitted').length}</div><div class="metric-sub">${fmt(awaitingAmt)} expected back</div></div>
+    <div class="metric"><div class="metric-label">Total reimbursed</div><div class="metric-value c-green">${fmt(totalReimb)}</div></div>
+    <div class="metric"><div class="metric-label">Net out-of-pocket</div><div class="metric-value">${fmt(netOOP)}</div><div class="metric-sub">after reimbursements</div></div>
+  `;
+
+  const sorted=[...state.reimburse].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('reimb-tbody').innerHTML=sorted.length
+    ?sorted.map(r=>`<tr>
+        <td style="white-space:nowrap;color:var(--text2)">${r.date}</td>
+        <td>${mpill(r.member)}</td>
+        <td>${r.provider}</td>
+        <td style="font-weight:500">${fmt(r.paid)}</td>
+        <td style="color:var(--text2)">${r.expected?fmt(r.expected):'—'}</td>
+        <td style="color:var(--green-text)">${r.reimbursed?fmt(r.reimbursed):'—'}</td>
+        <td style="color:var(--text2);font-size:12px">${r.submittedDate||'—'}</td>
+        <td>${rbadge(r.status)}</td>
+        <td><div style="display:flex;gap:4px;">
+          <button class="btn btn-sm" onclick="editReimb(${r.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteReimb(${r.id})">Del</button>
+        </div></td>
+      </tr>`).join('')
+    :`<tr><td colspan="9" class="empty">No reimbursement claims yet. Add Maggie's OON visits here.</td></tr>`;
+}
+
+function renderHSA() {
+  const contributed=state.hsa.filter(h=>h.amount>0).reduce((a,h)=>a+h.amount,0);
+  const spent=Math.abs(state.hsa.filter(h=>h.amount<0).reduce((a,h)=>a+h.amount,0));
+  const bal=contributed-spent;
+  const limit=state.settings.hsaContrib||4300;
+
+  document.getElementById('hsa-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Current balance</div><div class="metric-value c-green">${fmt(bal)}</div></div>
+    <div class="metric"><div class="metric-label">Contributed this year</div><div class="metric-value">${fmt(contributed)}</div><div class="metric-sub">of ${fmt(limit)} limit</div></div>
+    <div class="metric"><div class="metric-label">Spent from HSA</div><div class="metric-value c-amber">${fmt(spent)}</div></div>
+    <div class="metric"><div class="metric-label">Contribution room left</div><div class="metric-value">${fmt(Math.max(0,limit-contributed))}</div></div>
+  `;
+
+  let running=0;
+  const rows=[...state.hsa].sort((a,b)=>a.date.localeCompare(b.date)).map(h=>{
+    running+=h.amount;
+    const isOut=h.amount<0;
+    return `<tr>
+      <td style="color:var(--text2);white-space:nowrap">${h.date}</td>
+      <td>${h.desc}</td><td style="color:var(--text2)">${h.type}</td>
+      <td style="font-weight:500;color:${isOut?'var(--red-text)':'var(--green-text)'}">
+        ${isOut?'−':'+'} ${fmt(Math.abs(h.amount))}
+      </td>
+      <td style="font-weight:500">${fmt(running)}</td>
+    </tr>`;
+  });
+  document.getElementById('hsa-tbody').innerHTML=rows.length?rows.join(''):'<tr><td colspan="5" class="empty">No HSA transactions yet.</td></tr>';
+}
+
+function renderAlerts() {
+  const alerts=[];
+  const s=state.settings;
+
+  state.claims.forEach(c=>{
+    if(c.status==='waiting-eob') alerts.push({t:'warn',m:`<strong>${c.provider}</strong> (${c.member}, ${c.date}) — EOB not received yet. Do not pay this bill until the EOB arrives.`});
+    if(c.status==='waiting-bill') alerts.push({t:'info',m:`<strong>${c.provider}</strong> (${c.member}) — EOB received. Watch for the bill and compare amounts before paying.`});
+    if(c.network==='out'&&c.status!=='paid'&&c.status!=='oop') alerts.push({t:'warn',m:`<strong>${c.provider}</strong> is out-of-network — verify EOB matches the bill before paying.`});
+  });
+
+  const notSub=state.reimburse.filter(r=>r.status==='not-submitted');
+  if(notSub.length>=3) {
+    const amt=notSub.reduce((a,r)=>a+(r.paid||0),0);
+    alerts.push({t:'warn',m:`<strong>${notSub.length} reimbursement claims</strong> totaling <strong>${fmt(amt)}</strong> haven't been submitted — time for a batch!`});
+  }
+
+  const contributed=state.hsa.filter(h=>h.amount>0).reduce((a,h)=>a+h.amount,0);
+  const hsaRoom=(s.hsaContrib||4300)-contributed;
+  if(hsaRoom>200) alerts.push({t:'info',m:`<strong>${fmt(hsaRoom)}</strong> of HSA contribution room left this year — pre-tax money worth using.`});
+
+  const inPaid=state.claims.filter(c=>c.network==='in'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0);
+  if(inPaid>=s.inDedFam&&s.inDedFam>0) alerts.push({t:'green',m:`In-network family deductible met (${fmt(s.inDedFam)})! Insurance now covers a larger share of in-network claims.`});
+
+  const outPaid=state.claims.filter(c=>c.network==='out'&&(c.status==='paid'||c.status==='oop')).reduce((a,c)=>a+(c.youOwe||0),0)+state.reimburse.reduce((a,r)=>a+(r.paid||0),0);
+  if(outPaid>=s.outDedFam&&s.outDedFam>0) alerts.push({t:'green',m:`Out-of-network family deductible met (${fmt(s.outDedFam)})!`});
+
+  const count=alerts.length;
+  const dot=document.getElementById('alert-count');
+  dot.textContent=count; dot.style.display=count?'inline-flex':'none';
+
+  const icons={warn:'⚠',info:'ℹ',green:'✓'};
+  document.getElementById('alerts-list').innerHTML=alerts.length
+    ?alerts.map(a=>`<div class="alert-flag af-${a.t==='green'?'green':a.t==='warn'?'warn':'info'}">
+        <span class="af-icon">${icons[a.t]||'ℹ'}</span><span>${a.m}</span>
+      </div>`).join('')
+    :'<div class="alert-flag af-info"><span class="af-icon">✓</span><span>No alerts right now — you\'re all caught up!</span></div>';
+}
+
+function renderSettings() {
+  const s=state.settings;
+  document.getElementById('s-in-ded-ind').value=s.inDedInd;
+  document.getElementById('s-in-ded-fam').value=s.inDedFam;
+  document.getElementById('s-in-oop-ind').value=s.inOopInd;
+  document.getElementById('s-in-oop-fam').value=s.inOopFam;
+  document.getElementById('s-out-ded-ind').value=s.outDedInd;
+  document.getElementById('s-out-ded-fam').value=s.outDedFam;
+  document.getElementById('s-out-oop-ind').value=s.outOopInd;
+  document.getElementById('s-out-oop-fam').value=s.outOopFam;
+  document.getElementById('s-hsa').value=s.hsaContrib;
+  document.getElementById('s-year').value=s.year;
+  document.getElementById('plan-year-label').textContent=s.year;
+  document.getElementById('plan-year-label2').textContent=s.year;
+  document.getElementById('members-list').innerHTML=state.members.map((m,i)=>`
+    <div class="member-row">
+      <span class="mpill mp-${i%4}">${initials(m)}</span>
+      <span style="flex:1;font-size:14px">${m}</span>
+      ${state.members.length>1?`<button class="btn btn-sm" onclick="removeMember(${i})">Remove</button>`:''}
+    </div>`).join('');
+}
+
+function saveSettings() {
+  const s=state.settings;
+  s.inDedInd=parseFloat(document.getElementById('s-in-ded-ind').value)||1500;
+  s.inDedFam=parseFloat(document.getElementById('s-in-ded-fam').value)||3000;
+  s.inOopInd=parseFloat(document.getElementById('s-in-oop-ind').value)||3500;
+  s.inOopFam=parseFloat(document.getElementById('s-in-oop-fam').value)||7000;
+  s.outDedInd=parseFloat(document.getElementById('s-out-ded-ind').value)||3000;
+  s.outDedFam=parseFloat(document.getElementById('s-out-ded-fam').value)||6000;
+  s.outOopInd=parseFloat(document.getElementById('s-out-oop-ind').value)||6000;
+  s.outOopFam=parseFloat(document.getElementById('s-out-oop-fam').value)||12000;
+  s.hsaContrib=parseFloat(document.getElementById('s-hsa').value)||4300;
+  s.year=document.getElementById('s-year').value;
+  save(); render();
+}
+
+function addMember() {
+  const val=document.getElementById('new-member-input').value.trim();
+  if(val&&!state.members.includes(val)){state.members.push(val);document.getElementById('new-member-input').value='';save();render();toast('Member added');}
+}
+function removeMember(i){if(confirm(`Remove ${state.members[i]}?`)){state.members.splice(i,1);save();render();}}
+
+function memberSelect(id,defaultVal){
+  document.getElementById(id).innerHTML=state.members.map(m=>`<option>${m}</option>`).join('');
+  if(defaultVal) document.getElementById(id).value=defaultVal;
+}
+
+function openClaimModal(){
+  editClaimId=null;
+  document.getElementById('claim-modal-title').textContent='Add claim';
+  memberSelect('f-member');
+  document.getElementById('f-date').value=today();
+  ['f-provider','f-billed','f-ins-paid','f-you-owe','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-network').value='in';
+  document.getElementById('f-card').value='';
+  document.getElementById('f-status').value='pending';
+  document.getElementById('claim-modal').classList.add('open');
+}
+function editClaim(id){
+  const c=state.claims.find(x=>x.id===id);if(!c)return;
+  editClaimId=id;
+  document.getElementById('claim-modal-title').textContent='Edit claim';
+  memberSelect('f-member',c.member);
+  document.getElementById('f-date').value=c.date;
+  document.getElementById('f-provider').value=c.provider;
+  document.getElementById('f-type').value=c.type;
+  document.getElementById('f-network').value=c.network;
+  document.getElementById('f-billed').value=c.billed;
+  document.getElementById('f-ins-paid').value=c.insPaid;
+  document.getElementById('f-you-owe').value=c.youOwe;
+  document.getElementById('f-card').value=c.card;
+  document.getElementById('f-status').value=c.status;
+  document.getElementById('f-notes').value=c.notes;
+  document.getElementById('claim-modal').classList.add('open');
+}
+function closeClaimModal(){document.getElementById('claim-modal').classList.remove('open');}
+function saveClaim(){
+  const provider=document.getElementById('f-provider').value.trim();
+  if(!provider){alert('Please enter a provider name.');return;}
+  const claim={
+    id:editClaimId||Date.now(),
+    date:document.getElementById('f-date').value||today(),
+    member:document.getElementById('f-member').value,
+    provider,type:document.getElementById('f-type').value,
+    network:document.getElementById('f-network').value,
+    billed:parseFloat(document.getElementById('f-billed').value)||0,
+    insPaid:parseFloat(document.getElementById('f-ins-paid').value)||0,
+    youOwe:parseFloat(document.getElementById('f-you-owe').value)||0,
+    card:document.getElementById('f-card').value,
+    status:document.getElementById('f-status').value,
+    notes:document.getElementById('f-notes').value.trim()
+  };
+  if(editClaimId){const i=state.claims.findIndex(x=>x.id===editClaimId);state.claims[i]=claim;toast('Claim updated');}
+  else{state.claims.push(claim);toast('Claim added');}
+  save();closeClaimModal();render();
+}
+function deleteClaim(id){
+  const c=state.claims.find(x=>x.id===id);
+  if(c&&confirm(`Delete claim for ${c.provider}?`)){state.claims=state.claims.filter(x=>x.id!==id);save();render();toast('Deleted');}
+}
+
+function openReimbModal(){
+  editReimbId=null;
+  document.getElementById('reimb-modal-title').textContent='Add reimbursement claim';
+  memberSelect('r-member','Maggie Wilson');
+  document.getElementById('r-date').value=today();
+  ['r-provider','r-paid','r-expected','r-reimbursed','r-notes','r-submitted-date'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('r-status').value='not-submitted';
+  document.getElementById('r-card').value='Maggie';
+  document.getElementById('reimb-modal').classList.add('open');
+}
+function editReimb(id){
+  const r=state.reimburse.find(x=>x.id===id);if(!r)return;
+  editReimbId=id;
+  document.getElementById('reimb-modal-title').textContent='Edit reimbursement claim';
+  memberSelect('r-member',r.member);
+  document.getElementById('r-date').value=r.date;
+  document.getElementById('r-provider').value=r.provider;
+  document.getElementById('r-type').value=r.type;
+  document.getElementById('r-card').value=r.card;
+  document.getElementById('r-paid').value=r.paid;
+  document.getElementById('r-expected').value=r.expected||'';
+  document.getElementById('r-reimbursed').value=r.reimbursed||'';
+  document.getElementById('r-submitted-date').value=r.submittedDate||'';
+  document.getElementById('r-status').value=r.status;
+  document.getElementById('r-notes').value=r.notes||'';
+  document.getElementById('reimb-modal').classList.add('open');
+}
+function closeReimbModal(){document.getElementById('reimb-modal').classList.remove('open');}
+function saveReimb(){
+  const provider=document.getElementById('r-provider').value.trim();
+  if(!provider){alert('Please enter a provider name.');return;}
+  const reimb={
+    id:editReimbId||Date.now(),
+    date:document.getElementById('r-date').value||today(),
+    member:document.getElementById('r-member').value,
+    provider,type:document.getElementById('r-type').value,
+    card:document.getElementById('r-card').value,
+    paid:parseFloat(document.getElementById('r-paid').value)||0,
+    expected:parseFloat(document.getElementById('r-expected').value)||0,
+    reimbursed:parseFloat(document.getElementById('r-reimbursed').value)||0,
+    submittedDate:document.getElementById('r-submitted-date').value,
+    status:document.getElementById('r-status').value,
+    notes:document.getElementById('r-notes').value.trim()
+  };
+  if(editReimbId){const i=state.reimburse.findIndex(x=>x.id===editReimbId);state.reimburse[i]=reimb;toast('Updated');}
+  else{state.reimburse.push(reimb);toast('Reimbursement claim added');}
+  save();closeReimbModal();render();
+}
+function deleteReimb(id){
+  const r=state.reimburse.find(x=>x.id===id);
+  if(r&&confirm(`Delete claim for ${r.provider}?`)){state.reimburse=state.reimburse.filter(x=>x.id!==id);save();render();toast('Deleted');}
+}
+
+function openHSAModal(){
+  document.getElementById('h-date').value=today();
+  ['h-desc','h-amount'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('h-type').value='contribution';
+  document.getElementById('hsa-modal').classList.add('open');
+}
+function closeHSAModal(){document.getElementById('hsa-modal').classList.remove('open');}
+function saveHSA(){
+  const desc=document.getElementById('h-desc').value.trim();
+  const amt=parseFloat(document.getElementById('h-amount').value)||0;
+  const type=document.getElementById('h-type').value;
+  if(!desc||!amt){alert('Please fill in description and amount.');return;}
+  state.hsa.push({id:Date.now(),date:document.getElementById('h-date').value||today(),desc,type,amount:(type==='withdrawal'?-1:1)*Math.abs(amt)});
+  save();closeHSAModal();render();toast('HSA transaction saved');
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wilson-health-tracker-backup.json';a.click();
+}
+function clearData(){
+  if(confirm('Clear ALL data? This cannot be undone.')){state=JSON.parse(JSON.stringify(DEFAULT));save();render();toast('All data cleared');}
+}
+
+['claim-modal','reimb-modal','hsa-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('open');});
+});
+
+render();
+</script>
+</body>
+</html>
